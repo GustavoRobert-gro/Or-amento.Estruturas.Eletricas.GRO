@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório de Estruturas Elétricas</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f4f4f4; }
+    input[type="number"], select { width: 120px; }
+  </style>
+</head>
+<body>
+  <h2>Gustavo sistemas kkkk - Escolha a Estrutura Elétrica</h2>
+  <label for="estrutura">Selecione:</label>
+  <select id="estrutura">
+    <option value="">-- Selecione --</option>
+  </select>
+  <button onclick="adicionarOrcamento()">Registrar</button>
+  <button onclick="resetarOrcamento()">Resetar Orçamento</button>
+
+  <h3>Estruturas no Orçamento</h3>
+  <table id="estruturasNoOrcamento">
+    <thead>
+      <tr>
+        <th>Estrutura</th>
+        <th>Quantidade</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h3>Orçamento completo com todos os materiais</h3>
+  <table id="orcamentoTotal">
+    <thead>
+      <tr>
+        <th>Código</th> <!-- Adicionado código como primeira coluna -->
+        <th>Item</th>
+        <th>Descrição</th>
+        <th>Quantidade Total</th>
+        <th>Unidade</th> <!-- Campo Unidade adicionado aqui -->
+        <th>Valor Unitário</th>
+        <th>Valor Total</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  
+  <h3>Total Geral</h3>
+  <p id="totalGeral">Valor Geral: 0</p>
+
+  <h3>Desconto e Impostos</h3>
+  <label for="desconto">Desconto (%):</label>
+  <input type="number" id="desconto" value="0" onchange="atualizarTotal()">
+  <br>
+  <label for="imposto">Imposto (%):</label>
+  <input type="number" id="imposto" value="0" onchange="atualizarTotal()">
+
+  <script>
+    let orcamento = JSON.parse(localStorage.getItem("orcamento")) || {}; 
+    let estruturasAdicionadas = JSON.parse(localStorage.getItem("estruturasAdicionadas")) || {};
+
+    const unidadesDisponiveis = ["Unidade", "Kit", "Pacote", "Metro", "Caixa", "Pacote"];
+    const detalhesEstruturas = {
+      "CE-1": {
+        valor: 0,
+        itens: [
+          { item: "Produto", codigo: "26211", descricao: "CABO COBRE ISOLADO XLPE 16 MM 34KV COR CINZA", quantidade: 10, valor: 22.85, unidade: "Metro" },
+          { item: "Serviço", codigo: "10532", descricao: "INSTALAR ESTRUTURA PRIMÁRIA MRT(U1,U2)", quantidade: 1, valor: 650, unidade: "Unidade" },
+          { item: "Serviço", codigo: "10561", descricao: "INSTALAR POSTE, NA REDE COM USO DE GUINDAUTO - ATE? 13 M,LINEAS DE COMP", quantidade: 1, valor: 1320, unidade: "Unidade" },
+          { item: "Haste de Aterramento", codigo: "xxxxx", descricao: "Haste de Aterramento – Cobre 16mm x 2,4m", quantidade: 1, valor: 0, unidade: "Unidade" }
+        ]
+      },
+      "CE-3": {
+        valor: 0,
+        itens: [
+          { item: "Poste", codigo: "Nota 1", descricao: "Poste de Concreto 12m – Seção DT", quantidade: 1, valor: 1240.45, unidade: "Unidade" },
+          { item: "Cruzeta", codigo: "07905", descricao: "Cruzeta de Concreto (1200 mm x 100 mm x 75 mm) – 250 daN", quantidade: 1, valor: 0, unidade: "Unidade" },
+          { item: "Isolador de Pino", codigo: "xxxxx", descricao: "Isolador de Pino – Porcelana", quantidade: 2, valor: 0, unidade: "Unidade" },
+          { item: "Haste de Aterramento", codigo: "xxxxx", descricao: "Haste de Aterramento – Cobre 16mm x 2,4m", quantidade: 1, valor: 0, unidade: "Unidade" }
+        ]
+      },
+      "CE-4": {
+        valor: 0,
+        itens: [
+          { item: "Insumo", codigo: "9486", descricao: "ANEL DE AMARRAÇÃO", quantidade: 1, valor: 5.87, unidade: "Unidade" },
+          { item: "Cruzeta", codigo: "07905", descricao: "Cruzeta de Concreto (1200 mm x 100 mm x 75 mm) – 250 daN", quantidade: 1, valor: 0, unidade: "Unidade" },
+          { item: "Isolador de Pino", codigo: "xxxxx", descricao: "Isolador de Pino – Porcelana", quantidade: 2, valor: 0, unidade: "Unidade" },
+          { item: "Haste de Aterramento", codigo: "xxxxx", descricao: "Haste de Aterramento – Cobre 16mm x 2,4m", quantidade: 1, valor: 0, unidade: "Unidade" }
+        ]
+      },
+      "CE-5": {
+        valor: 0,
+        itens: [
+          { item: "Poste", codigo: "Nota 1", descricao: "Poste de Concreto 12m – Seção DT", quantidade: 1, valor: 1240.45, unidade: "Unidade" },
+          { item: "Cruzeta", codigo: "07905", descricao: "Cruzeta de Concreto (1200 mm x 100 mm x 75 mm) – 250 daN", quantidade: 1, valor: 0, unidade: "Unidade" },
+          { item: "Isolador de Pino", codigo: "xxxxx", descricao: "Isolador de Pino – Porcelana", quantidade: 2, valor: 0, unidade: "Unidade" },
+          { item: "Haste de Aterramento", codigo: "xxxxx", descricao: "Haste de Aterramento – Cobre 16mm x 2,4m", quantidade: 1, valor: 0, unidade: "Unidade" }
+        ]
+      }
+    };
+
+    function carregarEstruturas() {
+      let selectEstrutura = document.getElementById("estrutura");
+      for (let estrutura in detalhesEstruturas) {
+        let option = document.createElement("option");
+        option.value = estrutura;
+        option.textContent = estrutura;
+        selectEstrutura.appendChild(option);
+      }
+    }
+
+    function salvarNoLocalStorage() {
+      localStorage.setItem("orcamento", JSON.stringify(orcamento));
+      localStorage.setItem("estruturasAdicionadas", JSON.stringify(estruturasAdicionadas));
+    }
+
+    function carregarDoLocalStorage() {
+      if (orcamento && Object.keys(orcamento).length > 0) {
+        atualizarOrcamento();
+      }
+
+      if (estruturasAdicionadas && Object.keys(estruturasAdicionadas).length > 0) {
+        atualizarEstruturasNoOrcamento();
+      }
+    }
+
+    function adicionarOrcamento() {
+      let estrutura = document.getElementById("estrutura").value;
+      if (!estrutura || !(estrutura in detalhesEstruturas)) return;
+
+      if (!estruturasAdicionadas[estrutura]) {
+        estruturasAdicionadas[estrutura] = 1;
+      } else {
+        estruturasAdicionadas[estrutura] += 1;
+      }
+
+      detalhesEstruturas[estrutura].itens.forEach(material => {
+        let key = material.item + " - " + material.descricao;
+        if (!orcamento[key]) {
+          orcamento[key] = { codigo: material.codigo, quantidade: 0, valorUnitario: material.valor, unidade: material.unidade };
+        }
+        orcamento[key].quantidade += material.quantidade;
+      });
+
+      salvarNoLocalStorage();
+      atualizarOrcamento();
+      atualizarEstruturasNoOrcamento();
+    }
+
+    function atualizarOrcamento() {
+      let tabela = document.getElementById("orcamentoTotal").getElementsByTagName("tbody")[0];
+      tabela.innerHTML = "";
+
+      let totalGeral = 0;
+      Object.keys(orcamento).forEach(key => {
+        const dados = orcamento[key];
+        const valorTotal = dados.quantidade * dados.valorUnitario;
+        totalGeral += valorTotal;
+
+        let row = tabela.insertRow();
+        row.insertCell(0).innerText = dados.codigo; // Exibindo o código
+        row.insertCell(1).innerText = key.split(" - ")[0];
+        row.insertCell(2).innerText = key.split(" - ")[1];
+
+        let cellQuantidade = row.insertCell(3);
+        let inputQuantidade = document.createElement("input");
+        inputQuantidade.type = "number";
+        inputQuantidade.value = dados.quantidade;
+        inputQuantidade.min = 0;
+        inputQuantidade.addEventListener("change", function() {
+          let novaQuantidade = parseInt(inputQuantidade.value);
+          if (isNaN(novaQuantidade) || novaQuantidade < 0) {
+            novaQuantidade = 0;
+          }
+          dados.quantidade = novaQuantidade;
+          salvarNoLocalStorage();
+          atualizarOrcamento();
+        });
+        cellQuantidade.appendChild(inputQuantidade);
+
+        // Campo Unidade (movido para antes do valor unitário)
+        let cellUnidade = row.insertCell(4);
+        let selectUnidade = document.createElement("select");
+        unidadesDisponiveis.forEach(unidade => {
+          let option = document.createElement("option");
+          option.value = unidade;
+          option.textContent = unidade;
+          selectUnidade.appendChild(option);
+        });
+        selectUnidade.value = dados.unidade;
+        selectUnidade.onchange = function() {
+          dados.unidade = selectUnidade.value;
+          salvarNoLocalStorage();
+        };
+        cellUnidade.appendChild(selectUnidade);
+
+        let cellValorUnit = row.insertCell(5);
+        let inputValorUnit = document.createElement("input");
+        inputValorUnit.type = "number";
+        inputValorUnit.value = dados.valorUnitario;
+        inputValorUnit.onchange = function() {
+          dados.valorUnitario = parseFloat(this.value) || 0;
+          salvarNoLocalStorage();
+          atualizarOrcamento();
+        };
+        cellValorUnit.appendChild(inputValorUnit);
+
+        let cellValorTotal = row.insertCell(6);
+        cellValorTotal.innerText = valorTotal;
+
+        // Ação
+        let cellAcao = row.insertCell(7);
+        let btnExcluir = document.createElement("button");
+        btnExcluir.innerText = "Excluir";
+        btnExcluir.onclick = () => removerItemOrcamento(key);
+        cellAcao.appendChild(btnExcluir);
+      });
+
+      atualizarTotal();
+    }
+
+    function atualizarEstruturasNoOrcamento() {
+      let tabela = document.getElementById("estruturasNoOrcamento").getElementsByTagName("tbody")[0];
+      tabela.innerHTML = "";
+
+      Object.keys(estruturasAdicionadas).forEach(estrutura => {
+        let row = tabela.insertRow();
+        row.insertCell(0).innerText = estrutura;
+        row.insertCell(1).innerText = estruturasAdicionadas[estrutura];
+
+        let cellAcao = row.insertCell(2);
+        let btnExcluirEstrutura = document.createElement("button");
+        btnExcluirEstrutura.innerText = "Excluir Estrutura";
+        btnExcluirEstrutura.onclick = () => removerEstrutura(estrutura);
+        cellAcao.appendChild(btnExcluirEstrutura);
+      });
+    }
+
+    function atualizarTotal() {
+      let totalGeral = 0;
+      Object.keys(orcamento).forEach(key => {
+        totalGeral += orcamento[key].quantidade * orcamento[key].valorUnitario;
+      });
+
+      // Calculando desconto
+      let desconto = parseFloat(document.getElementById("desconto").value) || 0;
+      totalGeral -= (totalGeral * desconto / 100);
+
+      // Calculando imposto
+      let imposto = parseFloat(document.getElementById("imposto").value) || 0;
+      totalGeral += (totalGeral * imposto / 100);
+
+      document.getElementById("totalGeral").innerText = "Valor Geral: " + totalGeral.toFixed(2);
+    }
+
+    function removerItemOrcamento(key) {
+      delete orcamento[key];
+      salvarNoLocalStorage();
+      atualizarOrcamento();
+    }
+
+    function removerEstrutura(estrutura) {
+      detalhesEstruturas[estrutura].itens.forEach(material => {
+        let key = material.item + " - " + material.descricao;
+        if (orcamento[key]) {
+          orcamento[key].quantidade -= material.quantidade;
+          if (orcamento[key].quantidade <= 0) {
+            delete orcamento[key];
+          }
+        }
+      });
+
+      estruturasAdicionadas[estrutura]--;
+      if (estruturasAdicionadas[estrutura] <= 0) {
+        delete estruturasAdicionadas[estrutura];
+      }
+
+      salvarNoLocalStorage();
+      atualizarOrcamento();
+      atualizarEstruturasNoOrcamento();
+    }
+
+    function resetarOrcamento() {
+      orcamento = {};
+      estruturasAdicionadas = {};
+
+      localStorage.removeItem("orcamento");
+      localStorage.removeItem("estruturasAdicionadas");
+
+      atualizarOrcamento();
+      atualizarEstruturasNoOrcamento();
+    }
+
+    window.onload = function() {
+      carregarEstruturas();
+      carregarDoLocalStorage();
+    };
+  </script>
+</body>
+</html>
